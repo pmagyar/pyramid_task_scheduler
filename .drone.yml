@@ -1,0 +1,38 @@
+kind: pipeline
+type: docker
+name: pyramid_task_scheduler
+
+platform:
+  os: linux
+
+steps:
+- name: flake8 and black
+  image: python
+  commands:
+    - pip install flake8 black 
+    - flake8 .
+    - black --diff .
+
+- name: package_and_unit_tests
+  image: python
+  commands:
+  - pip3 install .
+
+- name: build
+  image: python
+  commands:
+    - python3 setup.py bdist_wheel
+    - python3 setup.py sdist --formats=gztar
+
+- name: pypi_publish
+  image: plugins/pypi
+  settings:
+    username:
+      from_secret: pypi_username
+    password:
+      from_secret: pypi_password
+    skip_build: True
+  when:
+    branch: master
+    event: push
+    repo: pmagyar/pyramid_task_scheduler
